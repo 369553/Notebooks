@@ -16,6 +16,8 @@
 
 - Bilhassa not defterinin temel kısımlarında yalın bir üslûp kullanmaya çalıştım, hayırlı çalışmalar dilerim.
 
+- Yazar, Mehmet Âkif SOLAK.
+
 ## GENEL BİLGİLER
 
 - MySQL Genel Kamu Lisansı (GNU Public License) altında açık kaynak olarak sunulan, geniş bir topluluk desteği bulunan, güçlü bir ilişkisel veritabanı yazılımıdır.
