@@ -275,7 +275,7 @@
 - `DATETIME` verisi 5 byte yer kaplar. En küçük değeri `1000-01-01 00:00:00` değeridir. En büyük değeri `9999-12-31 23:59:59` değeridir.
 
 - `DATETIME` alanı varsayılan olarak milisaniye verisi tutmaz; fakat istenilirse tutması sağlanabilir. Bunun için saniyeden sonra kaç basamak kullanılmak istendiği bilgisi sütunu tanımlanırken belirtilmelidir.
-  Misal, `DECIMAL(2)` tanımı saniyeden sonra 2 basamak hassâsiyyette veri tutulacağını ifâde etmektedir.
+  Misal, `DATETIME(2)` tanımı saniyeden sonra 2 basamak hassâsiyyette veri tutulacağını ifâde etmektedir.
 
 - Saniyeden sonra tutulacak basamak sayısı için ilâve alana ihtiyaç vardır. Aşağıdaki tablo saniyeden sonraki basamak sayısına göre gereken alanı göstermektedir:
   
@@ -1470,7 +1470,13 @@ SELECT writer, SUM(page) FROM articles GROUP BY writer;
       MODIFY surname VARCHAR(50) NOT NULL DEFAULT 'soyisimsiz';
   ```
 
-> ***NOT :*** `ALTER TABLE tabloIsmi ALTER COLUMN sutunIsmi SET DEFAULT deger` biçimindeki kod MySQL'in 8.0.24 sürümünde çalışmıyor.
+> ***NOT :*** `ALTER TABLE tabloIsmi ALTER COLUMN sutunIsmi SET DEFAULT deger` biçimindeki kodda değer olarak bir fonksiyon yazarsanız bu değeri parantez içerisine almalısınız; aksi takdire kod hatâ verir:
+> 
+> ```sql
+> CREATE TABLE saat (t TIME(3));
+> ALTER TABLE saat ALTER COLUMN t SET DEFAULT NOW(3);# Hatâ verir
+> ALTER TABLE saat ALTER COLUMN t SET DEFAULT (NOW(3));# Çalışır
+> ```
 
 ##### 'Varsayılan değer' kısıtının kaldırılması
 
@@ -1497,6 +1503,19 @@ SELECT writer, SUM(page) FROM articles GROUP BY writer;
           DEFAULT NOW()
           ON UPDATE CURRENT_TIMESTAMP
       );# CURRENT_TIMESTAMP yerine NOW() da yazılabilir.
+  ```
+
+- Zamân değeri tutan sütunların varsayılan değerleri sistem zamânı olarak belirtilirken parantez kullanılmayacaksa, belirtilen değer milisaniye bakımından uyumlu olmalıdır:
+  
+  ```sql
+  # Aşağıdaki satır hatâ verir:
+  CREATE TABLE tarih (t DATETIME(2) DEFAULT CURRENT_TIMESTAMP());
+  # Yukarıdaki satır şu şekilde yazılabilir, kod çalışır:
+  CREATE TABLE tarih (t DATETIME(2) DEFAULT (CURRENT_TIMESTAMP()));
+  # Fakat varsayılan değer milisaniye hassâsiyetinde eklenmez
+  # Eğer milisaniye kaybı olması istenmiyorsa şu yazılmalıdır:
+  CREATE TABLE tarih (t DATETIME(2) DEFAULT CURRENT_TIMESTAMP(2));
+  # Milisaniye bakımından uyumlu yazıldığında ek paranteze gerek yok
   ```
 
 #### Kontrol ('CHECK') Kısıtı
@@ -1885,7 +1904,7 @@ SELECT writer, SUM(page) FROM articles GROUP BY writer;
 
 - Bu tipler için veri eklenirken veri metînsel ifâde gibi tek veyâ çift tırnak içerisinde yazılır. Burada verilerin yazım formatı önemlidir.
 
-- `DATETIME` `YYYY-AA-GG SS-DD-SA` formatında, `DATE` `YYYY-AA-GG` formatında ve `TIME` `SS-DD-SA` formatında yazılır:
+- `DATETIME` `YYYY-AA-GG SS:DD:SA` formatında, `DATE` `YYYY-AA-GG` formatında ve `TIME` `SS:DD:SA` formatında yazılır:
   
   ```sql
   INSERT INTO veri#DATETIME, DATE ve TIME sütunları için
@@ -1893,6 +1912,14 @@ SELECT writer, SUM(page) FROM articles GROUP BY writer;
   ```
 
 - Şu anki târih değerini eklemek için `NOW()` fonksiyonu kullanılır. Bu fonksiyon üç veri tipi (`DATETIME` , `DATE` ve `TIME`) için de kullanılabilir; veri eklerken uyarı görüntülenir; zîrâ `NOW()` fonksiyonu şu anki târih ve saati döndürdüğünden `DATE` ve `TIME` tipindeki sütunlara bu değer eklenirken veri kaybı olur, bu uyarı bundan dolayıdır; fakat istenen sonuç elde edilir..
+
+> ***NOT :*** Târih - saat sütununa milisaniye hassassiyetinde veri eklemek için CURRENT_TIMESTAMP() ve NOW() fonksiyonularına hassasiyet değerini vermeliyiz; aksi takdirde şu anki zamân değeri milisaniye değeri 0 olacak şekilde eklenir:
+> 
+> ```sql
+> CREATE TABLE tarih (t DATETIME(5));
+> INSERT INTO tarih VALUES(NOW());# Milisaniye değeri sıfır olur
+> INSERT INTO tarih VALUES(NOW(5));# Milisaniye değeri de kaydedilir
+> ```
 
 - MySQL'i Workbench yazılım arayüzüyle kullanırken fark etmeyebiliriz, biz verimizi metîn gibi çift tırnak veyâ tek tırnak içerisinde yazsak da verimiz yazılım tarafından otomatik olarak hedef veri tipine dönüştürülür. MySQL'i bir API aracılığıyla kullandığımızda veyâ metîn tipindeki bir sütundaki veriyi çekip, târih saat tipindeki bir sütuna otomatik olarak eklememiz gerektiğinde metni ilgili târih saat formatına (üçünden birisi) dönüştürmemiz lazımdır. Bunun için de `STR_TO_DATE` fonksiyonu kullanılır. Bu fonksiyonun kullanımı için ilgili kısma bakınız.
 
@@ -4225,7 +4252,7 @@ SELECT writer, SUM(page) FROM articles GROUP BY writer;
 
 - `CURTIME([hassasiyet])` : Şu anki saat bilgisini metîn olarak getirir. `CURRENT_TIME()` ve `CURRENT_TIME` isimleriyle de çağrılabilir. Saniyeden sonra kaç basamak hassâsiyyet isteniyorsa girdi olarak verilebilir.
 
-- `NOW()` : Şu anki târih ve saat bilgisini metîn olarak getirir. Gelen veriyi sayısal olarak almak için `CURDATE() + 0` kullanım biçimi tercih edilebilir. `CURRENT_TIMESTAMP()` ve `CURRENT_TIMESTAMP` isimleriyle de çağrılabilir. Bu fonksiyona belli miktarda târih ekleyip, oluşan yeni târih - saat değerini elde etmek için `INTERVAL` ifâdesini kullanmalısınız. `INTERVAL` ifâdesi 'aralık' anlamına gelir ve hangi târih / saat birimine göre ekleme / çıkarma yapmak istediğinizi belirtmenizi sağlar. Misal, `SELECT NOW() + [INTERVAL] 1 DAY;` kodu tam bir gün sonrasının târih-saat değerini getirir. Bunun gibi diğer aralık isimlerini kullanarak şu anki vakitten farklı uzaklıklardaki vakti elde edebilirsiniz, Allâh'ın izniyle. Eğer `INTERVAL` anahtar kelîmesini kullanmazsanız, sonuç sayısal olarak döndürülür:
+- `NOW([hassasiyet])` : Şu anki târih ve saat bilgisini metîn olarak getirir. Gelen veriyi sayısal olarak almak için `CURDATE() + 0` kullanım biçimi tercih edilebilir. `CURRENT_TIMESTAMP([hassasiyet])` ve `CURRENT_TIMESTAMP` isimleriyle de çağrılabilir. Bu fonksiyona belli miktarda târih ekleyip, oluşan yeni târih - saat değerini elde etmek için `INTERVAL` ifâdesini kullanmalısınız. `INTERVAL` ifâdesi 'aralık' anlamına gelir ve hangi târih / saat birimine göre ekleme / çıkarma yapmak istediğinizi belirtmenizi sağlar. Misal, `SELECT NOW() + [INTERVAL] 1 DAY;` kodu tam bir gün sonrasının târih-saat değerini getirir. Bunun gibi diğer aralık isimlerini kullanarak şu anki vakitten farklı uzaklıklardaki vakti elde edebilirsiniz, Allâh'ın izniyle. Eğer `INTERVAL` anahtar kelîmesini kullanmazsanız, sonuç sayısal olarak döndürülür:
   `YEAR` : Sene , `MONTH` : Ay, `WEEK` : Hafta, `DAY` : Gün, `HOUR` : Saat,
   `MINUTE` : Dakika, `SECOND` : Saniye , `MICROSECOND` : Mikrosaniye 
   `NOW()` fonksiyonu târih ve saat tipindeki sütunların varsayılan değeri için kullanılabilir: `updatedUser DATETIME DEFAULT NOW() ON UPDATE NOW();`
