@@ -552,11 +552,11 @@
 
 ### 7) Kullanışlı NumPy Fonksiyonları
 
-- NumPy dizisi metotları dışında olan kullanışlı bâzı `numpy` fonksiyonları:
+- Birçoğu NumPy dizisi metodu olarak yer almayan kullanışlı bâzı `numpy` fonksiyonları:
   
   - `unique(array)` : Dizi içerisindeki değerleri münferid (tekil) olarak döndürür.
   
-  - `std(a, axis = None, dtype = None, )` : Verilen dizinin standart sapmasını hesaplar. Eğer `axis` değerine `1` verilirse, sırasıyla her satırın standart sapma değeri, `0` verilirse sırasıyla her sütunun standart sapma değeri döndürülür.
+  - `std(a, axis = None, dtype = None)` : Verilen dizinin standart sapmasını hesaplar. Eğer `axis` değerine `1` verilirse, sırasıyla her satırın standart sapma değeri, `0` verilirse sırasıyla her sütunun standart sapma değeri döndürülür.
   
   - `flip(array)` : Verilen dizinin elemanlarının ters çevrilmiş hâlini döndürür. Eğer dizi matris ise, düzleştirildiğinde hangi sıradaysa, onun tersi sıralama geri döndürülür.
   
@@ -717,7 +717,48 @@
     print(nm.insert(d, d.shape[1], [34, 15, 15], axis=0))
     ```
   
-  - ..
+  - `vectorize(pyFunc)` : Bir dizinin tüm elemanlarına bir fonksiyon uygulamak istenildiğinde kullanılan bir fonksiyondur. Bu fonksiyon, bir sarmalayıcı ('decorator') fonksiyondur; yanî esas fonksiyonunuzu hâzırladıktan sonra bu fonksiyona verdiğiniz takdirde, diziye fonksiyonu uygulayıp, geriye fonksiyonun uygulandığı diziyi döndüren bir fonksiyon elde edersiniz. Kullanımı:
+    
+    ```py
+    xTrain=nm.array(
+        [[641, 542, 334],
+        [235, 232, 751]])
+    # Sayı 500'den büyükse, True döndüren bir fonksiyon:
+    filterFunc = lambda x : x > 500
+    filterForNumpy = nm.vectorize(filterFunc)
+    yTrain = filterForNumpy(xTrain)
+    print(yTrain)
+    # [[ True  True False]
+    #  [False False  True]]
+    ```
+  
+  - `apply_along_axis(func1d axis, arr)` : Bir fonksiyonu dizinin tüm alt değerlerine uygulamak yerine sadece eksene uygulamak için kullanılır. `funcId` yerine fonksiyon referansı verilir, `axis` yerine fonksiyonun uygulanmak istendiği eksen verilir, `arr` ise numpy dizisinin uygulanılmasının istendiği dizidir:
+    
+    ```py
+    # Veri oluşturma (5 adet, tek boyutlu, 3 elemanlı vektör):
+    xTrain = nm.random.random((5, 3))
+    print(xTrain)
+    # [[0.84133425, 0.08773297, 0.77305245],
+    # [0.07381985, 0.49218691, 0.81070819],
+    # [0.03669296, 0.59210796, 0.80565626],
+    # [0.8328506 , 0.3081141 , 0.52052579],
+    # [0.13617969, 0.21808379, 0.11095793]]
+    
+    # 3 elemanlı, bir boyutlu dizi için,
+    # her veri örneğinin elemanlarının toplamı 1.5'den
+    # büyük olanlar için True döndüren fonksiyon:
+    def xToY(element):
+        sum = 0
+        for i in range(len(element)):
+            sum+=element[i]
+        return sum > 1.5
+    
+    yTrain = nm.apply_along_axis(xToY, 1, xTrain)# fonk, eksen, veri
+    print(yTrain)
+    # [True, False, False, True, False]
+    ```
+  
+  -  i..
 
 > ***NOT :*** Bâzı fonksiyonların yazılandan çok daha fazla parametresi vardır; yaygın kullanıma veyâ genel ihtiyaca göre kullanılması düşünülen parametreler zikredilmiştir.
 
